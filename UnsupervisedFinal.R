@@ -1,5 +1,4 @@
-getwd()
-setwd("C:/Users/VSBAG/Desktop/DSE_Milan/3rd_sem_subject/ML&SL/Group_Project/Unsupervised")
+
 
 library(ggplot2)
 library(plyr)

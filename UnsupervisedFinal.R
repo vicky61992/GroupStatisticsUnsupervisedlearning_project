@@ -1,4 +1,5 @@
-
+getwd()
+setwd("C:/Users/VSBAG/Desktop/DSE_Milan/3rd_sem_subject/ML&SL/Group_Project/Unsupervised")
 
 library(ggplot2)
 library(plyr)
@@ -22,77 +23,68 @@ str(data)
 summary(data)
 
 View(data)
-# HeatMap
-res<- cor(data)
-col1<- colorRampPalette(c("blue", "white", "red"))(20)
-heatmap(x = res, col = col1, symm = TRUE, Colv = NA, Rowv = NA)
 
-## Correlation for redwine
+# Convert the frame to a table
+customer <- data.table(data)
 
-ggcorrplot(cor(data), hc.order = TRUE, type = "lower", lab = TRUE, insig = "blank")
+# Construct a data frame of totals using the data table
+fresh_prop <- customer[, sum(Fresh), by=.(Channel, Region)]
+fresh_prop$Category <- "Fresh"
 
+milk_prop <- customer[, sum(Milk), by=.(Channel, Region)]
+milk_prop$Category <- "Milk"
 
-# Boxplot for each variables in df
+grocery_prop <- customer[, sum(Grocery), by=.(Channel, Region)]
+grocery_prop$Category <- "Grocery"
 
-oldpar = par(mfrow = c(2,6))
-for ( i in 1:11 ) {
-  boxplot(data[[i]])
-  mtext(names(data)[i], cex = 0.8, side = 1, line = 2)
-}
-par(oldpar)
+frozen_prop <- customer[, sum(Frozen), by=.(Channel, Region)]
+frozen_prop$Category <- "Frozen"
 
-##  we are droping Region and channel variables 
+detergents_paper_prop <- customer[, sum(Detergents_Paper), by=.(Channel, Region)]
+detergents_paper_prop$Category <- "Detergents_Paper"
 
-df1 <- data[c(3,4,5,6,7,8)]
-View(df1)
-head(df1,5)
+delicassen_prop <- customer[, sum(Delicassen), by=.(Channel, Region)]
+delicassen_prop$Category <- "Delicassen"
 
 
-# Predictor values Histogram distribution of df
-
-oldpar = par(mfrow = c(3,2))
-for ( i in 1:6 ) {
-  hist(df1[[i]], xlab = names(df1)[i],
-           col = 'blue', main = paste("Average =", signif(mean(df1[[i]]),5)))
-}
-
-# We see in dataset all variables has left skewed except quality (normally distributed)
-
-# Elbow and Silhouette methods are direct methods and gap statistic method is the statistics method.
-
-silhouette_score <- function(k){
-  km <- kmeans(df1, centers = k, nstart=25)
-  ss <- silhouette(km$cluster, dist(df1))
-  mean(ss[, 3])
-}
-k <- 2:10
-avg_sil <- sapply(k, silhouette_score)
-plot(k, type='b', avg_sil, xlab='Number of clusters', ylab='Average Silhouette Scores', frame=FALSE)
-
-fviz_nbclust(df1, kmeans, method='silhouette')
-
-# The optimal number of clusters is 2. as shown in fig
-
-km.final <- kmeans(df1, 2)
-## Total Within cluster sum of square
-km.final$tot.withinss
-
-## Cluster sizes
-km.final$size
-
-data$cluster <- km.final$cluster
-head(data, 6)
-
-fviz_cluster(km.final, data=df1)
+# Combine the data tables
+customer_prop <- rbind(fresh_prop, milk_prop, grocery_prop, frozen_prop, detergents_paper_prop,  delicassen_prop)
 
 
-clusplot(data, data$cluster, color=TRUE, shade = TRUE, label=2)
+# Change 'Channel' and 'Region' to factors
+customer_prop$Channel <- as.factor(customer_prop$Channel)
+customer_prop$Region <- as.factor(customer_prop$Region)
+
+
+
+# Split the data table
+customer_prop_region <- subset(customer_prop, select = -Channel)
+customer_prop_channel <- subset(customer_prop, select = -Region)
 
 
 
 
+# Get the Channel and Region totals 
+channel_totals <- customer[, sum(Fresh + Milk + Grocery + Frozen + Detergents_Paper + Delicassen), by=.(Channel)]
+region_totals <- customer[, sum(Fresh + Milk + Grocery + Frozen + Detergents_Paper + Delicassen), by=.(Region)]
 
-# Alternative method
+
+# Calculate the amount spent per Channel/Region relative to the total
+customer_prop_channel$Prop <- 0
+customer_prop_channel[Channel == 1]$Prop <- customer_prop_channel[Channel == 1]$V1 / channel_totals[Channel == 1]$V1
+customer_prop_channel[Channel == 2]$Prop <- customer_prop_channel[Channel == 2]$V1 / channel_totals[Channel == 2]$V1
+
+customer_prop_region$Prop <- 0
+customer_prop_region[Region == 1]$Prop <- customer_prop_region[Region == 1]$V1 / region_totals[Region == 1]$V1
+customer_prop_region[Region == 2]$Prop <- customer_prop_region[Region == 2]$V1 / region_totals[Region == 2]$V1
+customer_prop_region[Region == 3]$Prop <- customer_prop_region[Region == 3]$V1 / region_totals[Region == 3]$V1
+
+ggplot(data = customer_prop_channel, aes(x = Category, y = Prop, fill = Channel)) + 
+  geom_bar(stat = "identity")
+
+ggplot(data = customer_prop_region, aes(x = Category, y = Prop, fill = Region)) + 
+  geom_bar(stat = "identity")
+
 # we use only one technique please comment which one is best
 # once we finalize then i make some more changes if possible according on that technique only.
 
@@ -105,6 +97,7 @@ df.test<- data[-df.index,]
 head(df)
 head(df.test)
 View(df)
+
 
 str(df)
 str(df.test)

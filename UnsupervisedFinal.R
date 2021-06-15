@@ -90,21 +90,22 @@ ggplot(data = customer_prop_region, aes(x = Category, y = Prop, fill = Region)) 
 
 
 
-set.seed(1) #Ensure reproducable code 
+set.seed(108) #Ensure reproducable code 
+
 df<- sample_frac(data,0.7) #split into test and train data by 7:3 ratio
 df.index<- as.numeric(rownames(df))
 df.test<- data[-df.index,]
-head(df)
-head(df.test)
-View(df)
+#head(df)
+#head(df.test)
+#View(df)
 
 
-str(df)
-str(df.test)
-summary(df)
-summary(df.test)
-summary(is.na(df))
-sapply(df,function(x)sum(is.na(x))) # there is no null values as we checked previously
+#str(df)
+#str(df.test)
+#summary(df)
+#summary(df.test)
+#summary(is.na(df))
+#sapply(df,function(x)sum(is.na(x))) # there is no null values as we checked previously
 
 table(df$Channel)
 # We can see channel 1 customers Channel - Horeca (Hotel/Restaurant/Cafe) there are 211 obs. and 97obs by channel 2 retail.
@@ -150,12 +151,12 @@ head(df)
 
 sort(boxplot.stats(df$Grocery)$out)
 
-quantile(df1$Grocery, probs=seq(from =0.9, to=1,by=0.025))
+quantile(df$Grocery, probs=seq(from =0.9, to=1,by=0.025))
 
-# From above, 95% percentile is selected due to the increment difference. Next, 95th percentile will replace the remaining outlier.
+# From above, 97.5% percentile is selected due to the increment difference. Next, 97.5th percentile will replace the remaining outlier.
 
-grocery.max <- as.numeric(quantile(df$Grocery,probs=0.95))
-df1$Grocery[df$Grocery > grocery.max] <- grocery.max
+grocery.max <- as.numeric(quantile(df$Grocery,probs=0.975))
+df$Grocery[df$Grocery > grocery.max] <- grocery.max
 
 # The same concept will be applied for detergents_paper category.
 
@@ -163,8 +164,8 @@ sort(boxplot.stats(df$Detergents_Paper)$out)
 
 quantile(df$Detergents_Paper, probs=seq(from =0.9, to=1,by=0.025))
 
-grocery.max <- as.numeric(quantile(df$Detergents_Paper,probs=0.925))
-df$Detergents_Paper[df$Detergents_Paper > grocery.max] <- grocery.max
+detergents_Paper.max <- as.numeric(quantile(df$Detergents_Paper,probs=0.975))
+df$Detergents_Paper[df$Detergents_Paper > detergents_Paper.max] <- detergents_Paper.max
 
 # The same concept will be applied for milk category.
 
@@ -172,8 +173,8 @@ sort(boxplot.stats(df$Milk)$out)
 
 quantile(df$Milk, probs=seq(from =0.9, to=1,by=0.025))
 
-grocery.max <- as.numeric(quantile(df$Milk,probs=0.925))
-df$Milk[df$Milk > grocery.max] <- grocery.max
+milk.max <- as.numeric(quantile(df$Milk,probs=0.975))
+df$Milk[df$Milk > milk.max] <- milk.max
 
 # For this project, will select the above 3 variables for simplicity.
 
@@ -209,7 +210,6 @@ fviz_nbclust(df.subset1, kmeans, method = "wss") +
 fviz_nbclust(df.subset1, kmeans, method = "silhouette")+
   labs(subtitle = "Silhouette method")
 
-set.seed(123)
 fviz_nbclust(df.subset1, kmeans, nstart = 25,  method = "gap_stat", nboot = 50)+
   labs(subtitle = "Gap statistic method")
 
@@ -223,6 +223,8 @@ df.subset1$cluster <- factor(kmean2.simple$cluster)
 summary(df.subset1)
 
 
+
+
 ggplot(data=df.subset1, aes(x=Detergents_Paper, y=Grocery, colour=cluster))+geom_point()+geom_point(data=as.data.frame(kmean2.simple$centers),color ="black", size=4, shape =17)
 
 
@@ -230,6 +232,27 @@ ggplot(data=df.subset1, aes(x=Detergents_Paper, y=Grocery, colour=cluster))+geom
 D<- daisy(df.subset1)
 plot(silhouette(kmean2.simple$cluster, D),col=1:2, border = NA)
 
+View(df)
+km.final <- kmeans(df, 2)
+View(km.final)
+str(km.final)
+str(kmean2.simple)
+
+## Total Within cluster sum of square
+kmean2.simple$tot.withinss
+
+## Cluster sizes
+kmean2.simple$size
+table(kmean2.simple$cluster,km.final$cluster)
+
+
+df$cluster <- kmean2.simple$cluster
+head(df, 6)
+
+
+fviz_cluster(kmean2.simple, data=df)
+
+clusplot(df, df$cluster, color=TRUE, shade = TRUE, label=2)
 
 
 
